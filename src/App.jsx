@@ -46,6 +46,7 @@ export default function App() {
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [appCerrada, setAppCerrada] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -137,7 +138,7 @@ export default function App() {
     }
 
     setEnviando(true);
-    setErrorMsg(''); // Limpiamos errores anteriores
+    setErrorMsg(''); 
     
     try {
       const colRef = collection(db, 'invitados');
@@ -150,18 +151,23 @@ export default function App() {
         userId: user ? user.uid : 'invitado_' + Date.now()
       };
 
-      // Timeout de 8 segundos por si Firebase se queda colgado por falta de permisos
       await Promise.race([
         addDoc(colRef, docData),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Tiempo de espera agotado. Las reglas de seguridad de Firebase están bloqueando la conexión o han caducado.")), 8000)
+          setTimeout(() => reject(new Error("TIEMPO_AGOTADO")), 8000)
         )
       ]);
 
       setEnviado(true);
     } catch (error) {
       console.error("Error al guardar en Firebase:", error);
-      setErrorMsg(error.message || "Error al conectar con la base de datos.");
+      
+      // Capturamos el error de permisos específicamente
+      if (error.code === 'permission-denied' || error.message.includes('permission') || error.message === 'TIEMPO_AGOTADO') {
+        setErrorMsg("¡La base de datos está bloqueada! Ve a Firebase > Firestore > Pestaña 'Reglas' y cambia el código a 'allow read, write: if true;'");
+      } else {
+        setErrorMsg("Error al conectar con la base de datos. Por favor, inténtalo de nuevo.");
+      }
     } finally {
       setEnviando(false);
     }
@@ -177,6 +183,18 @@ export default function App() {
     const fecha = new Date(timestamp);
     return fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
   };
+
+  if (appCerrada) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-pink-100 flex items-center justify-center p-4">
+        <div className="bg-white max-w-md w-full rounded-2xl shadow-xl p-8 text-center animate-in fade-in zoom-in duration-300">
+          <Heart size={64} className="text-pink-400 mx-auto mb-6 fill-pink-100" />
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Todo listo!</h2>
+          <p className="text-gray-600">Ya puedes cerrar esta ventana con total seguridad.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (authCargando) {
     return (
@@ -264,8 +282,25 @@ export default function App() {
         <div className="bg-white max-w-md w-full rounded-2xl shadow-xl p-8 text-center animate-in fade-in zoom-in duration-300">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600"><CheckCircle size={32} /></div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Asistencia confirmada!</h2>
-          <p className="text-gray-600 mb-6">Gracias, {formData.nombre}. Hemos registrado tu confirmación.</p>
-          <button onClick={resetForm} className="w-full bg-pink-400 hover:bg-pink-500 text-white font-medium py-3 px-4 rounded-xl transition-colors">Confirmar a otra persona</button>
+          <p className="text-gray-600 mb-8">Gracias, {formData.nombre}. Hemos registrado tu confirmación.</p>
+          
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={resetForm} 
+              className="w-full bg-white border-2 border-pink-400 text-pink-500 hover:bg-pink-50 font-medium py-3 px-4 rounded-xl transition-colors"
+            >
+              Confirmar a otra persona
+            </button>
+            <button 
+              onClick={() => {
+                window.close(); // Intenta cerrar la pestaña
+                setAppCerrada(true); // Pantalla final de respaldo
+              }} 
+              className="w-full bg-pink-400 hover:bg-pink-500 text-white font-medium py-3 px-4 rounded-xl transition-colors shadow-sm"
+            >
+              Finalizar y salir
+            </button>
+          </div>
         </div>
       </div>
     );
