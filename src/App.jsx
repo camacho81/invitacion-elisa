@@ -141,19 +141,27 @@ export default function App() {
     
     try {
       const colRef = collection(db, 'invitados');
-      await addDoc(colRef, {
+      const docData = {
         nombre: formData.nombre.trim(),
         apellido1: formData.apellido1.trim(),
         apellido2: formData.apellido2.trim(),
         tipoMenu: formData.tipoMenu, 
         fecha: Date.now(), 
         userId: user ? user.uid : 'invitado_' + Date.now()
-      });
+      };
+
+      // Timeout de 8 segundos por si Firebase se queda colgado por falta de permisos
+      await Promise.race([
+        addDoc(colRef, docData),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Tiempo de espera agotado. Las reglas de seguridad de Firebase están bloqueando la conexión o han caducado.")), 8000)
+        )
+      ]);
+
       setEnviado(true);
     } catch (error) {
       console.error("Error al guardar en Firebase:", error);
-      // Mostramos el mensaje de error directamente en pantalla en lugar de un alert
-      setErrorMsg("Error al conectar con la base de datos: " + error.message);
+      setErrorMsg(error.message || "Error al conectar con la base de datos.");
     } finally {
       setEnviando(false);
     }
