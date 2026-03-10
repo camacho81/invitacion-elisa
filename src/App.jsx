@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, ArrowRight, ShieldAlert, Database, Table, ArrowLeft, Loader2, Utensils, Lock, Flower, Calendar, Clock, MapPin, Heart } from 'lucide-react';
 
+// --- CONFIGURACIÓN DE FIREBASE ---
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, addDoc, onSnapshot } from 'firebase/firestore';
@@ -115,6 +116,7 @@ export default function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const nombreNormalizado = formData.nombre.trim().toLowerCase();
     const apellido1Normalizado = formData.apellido1.trim().toLowerCase();
     const apellido2Normalizado = formData.apellido2.trim().toLowerCase();
@@ -144,7 +146,7 @@ export default function App() {
       });
       setEnviado(true);
     } catch (error) {
-      alert("Hubo un problema al guardar.");
+      alert("Hubo un problema al guardar. Revisa tu configuración de Firebase.");
     } finally {
       setEnviando(false);
     }
