@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, ArrowRight, ShieldAlert, Database, Table, ArrowLeft, Loader2, Utensils, Lock, Flower, Calendar, Clock, MapPin, Heart } from 'lucide-react';
+import { CheckCircle, ArrowRight, ShieldAlert, Database, Table, ArrowLeft, Loader2, Utensils, Lock, Flower, Calendar, Clock, MapPin, Heart, Download } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE FIREBASE ---
 import { initializeApp } from 'firebase/app';
@@ -162,7 +162,6 @@ export default function App() {
     } catch (error) {
       console.error("Error al guardar en Firebase:", error);
       
-      // Capturamos el error de permisos específicamente
       if (error.code === 'permission-denied' || error.message.includes('permission') || error.message === 'TIEMPO_AGOTADO') {
         setErrorMsg("¡La base de datos está bloqueada! Ve a Firebase > Firestore > Pestaña 'Reglas' y cambia el código a 'allow read, write: if true;'");
       } else {
@@ -182,6 +181,38 @@ export default function App() {
   const formatearFecha = (timestamp) => {
     const fecha = new Date(timestamp);
     return fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+  };
+
+  // Función para exportar a CSV (Excel/Google Sheets)
+  const exportarCSV = () => {
+    // 1. Crear las cabeceras (nombres de las columnas)
+    let csvContent = "Fecha Registro,Nombre,Primer Apellido,Segundo Apellido,Menu\n";
+    
+    // 2. Rellenar con los datos de cada invitado
+    respuestasDb.forEach(invitado => {
+      const fecha = formatearFecha(invitado.fecha).replace(",", ""); // Quitamos comas para que no rompa el CSV
+      const nombre = invitado.nombre || "";
+      const ape1 = invitado.apellido1 || "";
+      const ape2 = invitado.apellido2 || "";
+      const menu = (invitado.tipoMenu === 'adulto' || invitado.esAdulto === 'si') ? 'Adulto' : 'Infantil';
+      
+      // Añadimos la fila al contenido CSV
+      csvContent += `"${fecha}","${nombre}","${ape1}","${ape2}","${menu}"\n`;
+    });
+
+    // 3. Crear el archivo descargable y forzar UTF-8 (para que las tildes se vean bien)
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", "lista_invitados_comunion.csv");
+    link.style.visibility = 'hidden';
+    
+    // 4. Hacer clic fantasma para iniciar la descarga
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (appCerrada) {
@@ -232,8 +263,29 @@ export default function App() {
               <div className="p-3 bg-pink-400 text-white rounded-xl shadow-lg shadow-pink-200"><Database size={24} /></div>
               <div><h1 className="text-2xl font-bold text-gray-800">Lista de Invitados</h1><p className="text-gray-500 text-sm">Registro de asistencias</p></div>
             </div>
-            <button onClick={() => setModoAdmin(false)} className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-xl transition-colors font-medium shadow-sm"><ArrowLeft size={18} />Cerrar Panel</button>
+            
+            {/* NUEVO: Botones de Exportar y Cerrar */}
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={exportarCSV} 
+                disabled={respuestasDb.length === 0}
+                className="flex items-center gap-2 bg-green-50 border border-green-200 hover:bg-green-100 text-green-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors font-medium shadow-sm"
+                title="Descargar para Excel"
+              >
+                <Download size={18} />
+                <span className="hidden sm:inline">Exportar Excel</span>
+              </button>
+              
+              <button 
+                onClick={() => setModoAdmin(false)} 
+                className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-xl transition-colors font-medium shadow-sm"
+              >
+                <ArrowLeft size={18} />
+                <span className="hidden sm:inline">Cerrar Panel</span>
+              </button>
+            </div>
           </div>
+          
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
