@@ -61,6 +61,7 @@ export default function App() {
         await signInAnonymously(auth);
       } catch (error) {
         if (montado) setAuthCargando(false);
+        console.error("Error de autenticación anónima:", error);
       }
     };
     
@@ -82,7 +83,9 @@ export default function App() {
         datosExtraidos.sort((a, b) => b.fecha - a.fecha);
         setRespuestasDb(datosExtraidos);
       },
-      (error) => { console.log("Esperando conexión..."); }
+      (error) => { 
+        console.error("Error leyendo base de datos:", error); 
+      }
     );
     return () => unsubscribe();
   }, []); 
@@ -134,6 +137,8 @@ export default function App() {
     }
 
     setEnviando(true);
+    setErrorMsg(''); // Limpiamos errores anteriores
+    
     try {
       const colRef = collection(db, 'invitados');
       await addDoc(colRef, {
@@ -146,7 +151,9 @@ export default function App() {
       });
       setEnviado(true);
     } catch (error) {
-      alert("Hubo un problema al guardar. Revisa tu configuración de Firebase.");
+      console.error("Error al guardar en Firebase:", error);
+      // Mostramos el mensaje de error directamente en pantalla en lugar de un alert
+      setErrorMsg("Error al conectar con la base de datos: " + error.message);
     } finally {
       setEnviando(false);
     }
