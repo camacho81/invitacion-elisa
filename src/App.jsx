@@ -185,19 +185,19 @@ export default function App() {
 
   // Función para exportar a CSV (Excel/Google Sheets)
   const exportarCSV = () => {
-    // 1. Crear las cabeceras (nombres de las columnas)
-    let csvContent = "Fecha Registro,Nombre,Primer Apellido,Segundo Apellido,Menu\n";
+    // 1. Crear las cabeceras (nombres de las columnas con punto y coma para Excel España)
+    let csvContent = "Fecha Registro;Nombre;Primer Apellido;Segundo Apellido;Menu\n";
     
     // 2. Rellenar con los datos de cada invitado
     respuestasDb.forEach(invitado => {
-      const fecha = formatearFecha(invitado.fecha).replace(",", ""); // Quitamos comas para que no rompa el CSV
+      const fecha = formatearFecha(invitado.fecha).replace(";", ""); // Quitamos punto y coma interno si lo hubiera
       const nombre = invitado.nombre || "";
       const ape1 = invitado.apellido1 || "";
       const ape2 = invitado.apellido2 || "";
       const menu = (invitado.tipoMenu === 'adulto' || invitado.esAdulto === 'si') ? 'Adulto' : 'Infantil';
       
-      // Añadimos la fila al contenido CSV
-      csvContent += `"${fecha}","${nombre}","${ape1}","${ape2}","${menu}"\n`;
+      // Añadimos la fila al contenido CSV separando con punto y coma
+      csvContent += `"${fecha}";"${nombre}";"${ape1}";"${ape2}";"${menu}"\n`;
     });
 
     // 3. Crear el archivo descargable y forzar UTF-8 (para que las tildes se vean bien)
